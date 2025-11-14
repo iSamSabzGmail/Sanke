@@ -1,140 +1,229 @@
-body {
-  margin: 0;
-  background: radial-gradient(circle at center, #0b1220, #04060d);
-  color: #f0f6ff;
-  font-family: system-ui, sans-serif;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+const boardSize = 20;
+const board = document.getElementById("game-board");
+const scoreEl = document.getElementById("score");
+const statusEl = document.getElementById("status");
+
+const overlay = document.getElementById("overlay");
+const finalScoreEl = document.getElementById("final-score");
+const retryBtn = document.getElementById("retry-btn");
+const endBtn = document.getElementById("end-btn");
+
+let snake, direction, apple, gift, giftTimer;
+let score, speed, gameInterval, isPaused, gameOverState, applesEaten;
+
+// متغیرهای جدید برای کنترل لمسی
+let touchStartX = 0;
+let touchStartY = 0;
+
+function initGame() {
+  snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }];
+  direction = { x: 0, y: 0 };
+  apple = randomApple();
+  gift = null;
+  giftTimer = null;
+  score = 0;
+  speed = 200; // کمی سریع‌تر برای چالش بیشتر
+  applesEaten = 0;
+  isPaused = true;
+  gameOverState = false;
+  scoreEl.textContent = "Score: 0";
+  // پیام شروع برای هر دو پلتفرم
+  statusEl.textContent = "Swipe or use arrow keys to start";
+  clearInterval(gameInterval);
+  createBoard();
+  draw();
 }
 
-.game-container {
-  text-align: center;
+function createBoard() {
+  board.innerHTML = "";
+  for (let y = 0; y < boardSize; y++) {
+    for (let x = 0; x < boardSize; x++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      board.appendChild(cell);
+    }
+  }
 }
 
-h1 {
-  color: #78d6ff;
-  margin-bottom: 10px;
-  letter-spacing: 1px;
+function draw() {
+  const cells = board.querySelectorAll(".cell");
+  cells.forEach(c => (c.className = "cell"));
+
+  const appleIndex = apple.y * boardSize + apple.x;
+  cells[appleIndex].classList.add("apple");
+
+  if (gift) {
+    const giftIndex = gift.y * boardSize + gift.x;
+    cells[giftIndex].classList.add("gift");
+  }
+
+  snake.forEach((part, i) => {
+    const idx = part.y * boardSize + part.x;
+    if (cells[idx]) {
+      cells[idx].classList.add("snake");
+      if (i === 0) cells[idx].classList.add("head");
+    }
+  });
 }
 
-#game-board {
-  width: 400px;
-  height: 400px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  display: grid;
-  grid-template-columns: repeat(20, 1fr);
-  grid-template-rows: repeat(20, 1fr);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-  margin: 10px auto;
-  position: relative;
+function randomApple() {
+  let pos;
+  do {
+    pos = { x: Math.floor(Math.random() * boardSize), y: Math.floor(Math.random() * boardSize) };
+  } while (snake.some(s => s.x === pos.x && s.y === pos.y) || (gift && gift.x === pos.x && gift.y === pos.y));
+  return pos;
 }
 
-.cell {
-  width: 100%;
-  height: 100%;
+function randomGift() {
+  let pos;
+  do {
+    pos = { x: Math.floor(Math.random() * boardSize), y: Math.floor(Math.random() * boardSize) };
+  } while (snake.some(s => s.x === pos.x && s.y === pos.y) || (apple.x === pos.x && apple.y === pos.y));
+  return pos;
 }
 
-.snake {
-  background: linear-gradient(180deg, #00ffb3, #00b37a);
-  border-radius: 4px;
+function moveSnake() {
+  const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+  if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize || snake.some(s => s.x === head.x && s.y === head.y)) {
+    triggerGameOver();
+    return;
+  }
+
+  snake.unshift(head);
+
+  if (head.x === apple.x && head.y === apple.y) {
+    score += 5;
+    applesEaten++;
+    speed *= 0.95; // افزایش سرعت
+    apple = randomApple();
+    scoreEl.textContent = `Score: ${score}`;
+    restartLoop();
+    if (applesEaten % 3 === 0) spawnGift();
+  } else if (gift && head.x === gift.x && head.y === gift.y) {
+    score += 20;
+    gift = null;
+    clearTimeout(giftTimer);
+    scoreEl.textContent = `Score: ${score}`;
+  } else {
+    snake.pop();
+  }
+
+  draw();
 }
 
-.head {
-  background: linear-gradient(180deg, #52ff8a, #00d67f);
-  box-shadow: 0 0 6px #00ffcc;
+function spawnGift() {
+  gift = randomGift();
+  draw();
+  clearTimeout(giftTimer);
+  giftTimer = setTimeout(() => { gift = null; draw(); }, 5000);
 }
 
-.apple {
-  background: radial-gradient(circle at 40% 40%, #ff4f4f, #b30000);
-  border-radius: 50%;
-  box-shadow: 0 0 8px #ff4f4f;
+function restartLoop() {
+  clearInterval(gameInterval);
+  gameInterval = setInterval(moveSnake, speed);
 }
 
-/* ✨ Special Gift */
-.gift {
-  background: radial-gradient(circle at 40% 40%, #fff176, #c79a00);
-  border-radius: 50%;
-  box-shadow: 0 0 10px #ffde00;
-  animation: pulse 1s infinite ease-in-out;
+function pauseGame() {
+  if (gameOverState) return;
+  if (isPaused) {
+    isPaused = false;
+    restartLoop();
+    statusEl.textContent = "Press SPACE to pause";
+  } else {
+    isPaused = true;
+    clearInterval(gameInterval);
+    statusEl.textContent = "⏸ Paused (Press SPACE to resume)";
+  }
 }
 
-@keyframes pulse {
-  0% { transform: scale(0.9); box-shadow: 0 0 10px #ffde00; }
-  50% { transform: scale(1.1); box-shadow: 0 0 25px #ffde00; }
-  100% { transform: scale(0.9); box-shadow: 0 0 10px #ffde00; }
+function triggerGameOver() {
+  clearInterval(gameInterval);
+  clearTimeout(giftTimer);
+  gameOverState = true;
+  isPaused = true;
+  statusEl.textContent = "💀 Game Over!";
+  finalScoreEl.textContent = `Your score: ${score}`;
+  overlay.classList.remove("hidden");
 }
 
-.info {
-  display: flex;
-  justify-content: space-between;
-  width: 400px;
-  margin: 10px auto;
-  font-size: 1rem;
+// تابع کمکی برای تغییر جهت جهت جلوگیری از کد تکراری
+function changeDirection(newDir) {
+  if (snake.length > 1 && newDir.x === -direction.x && newDir.y === -direction.y) return;
+  direction = newDir;
+  startGame();
 }
 
-#status {
-  color: #9fb8ff;
+function startGame() {
+  if (gameOverState) return;
+  if (!isPaused) return;
+  isPaused = false;
+  statusEl.textContent = "Press SPACE to pause";
+  restartLoop();
 }
 
-/* Overlay Popup */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+// --- رویدادهای کنترل لمسی (برای موبایل) ---
+function handleTouchStart(e) {
+  e.preventDefault(); // جلوگیری از اسکرول صفحه
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
 }
 
-.hidden {
-  display: none;
+function handleTouchEnd(e) {
+  if (!touchStartX || !touchStartY) return;
+  e.preventDefault(); // جلوگیری از اسکرول صفحه
+
+  let touchEndX = e.changedTouches[0].clientX;
+  let touchEndY = e.changedTouches[0].clientY;
+
+  let dx = touchEndX - touchStartX;
+  let dy = touchEndY - touchStartY;
+
+  if (Math.abs(dx) > Math.abs(dy)) { // حرکت افقی
+    if (dx > 0) changeDirection({ x: 1, y: 0 }); // راست
+    else changeDirection({ x: -1, y: 0 }); // چپ
+  } else { // حرکت عمودی
+    if (dy > 0) changeDirection({ x: 0, y: 1 }); // پایین
+    else changeDirection({ x: 0, y: -1 }); // بالا
+  }
+  touchStartX = 0;
+  touchStartY = 0;
 }
 
-.popup {
-  background: rgba(20, 30, 45, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 30px 40px;
-  text-align: center;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-  color: #fff;
-}
+// اضافه کردن رویدادهای لمسی به صفحه بازی
+board.addEventListener('touchstart', handleTouchStart, { passive: false });
+board.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-.popup h2 {
-  margin-bottom: 10px;
-  color: #ff7272;
-}
 
-.popup p {
-  color: #9fb8ff;
-}
+// --- رویدادهای کنترل کیبورد (برای دسکتاپ) ---
+document.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if (key === " " || key === "spacebar") {
+    pauseGame();
+    return;
+  }
+  const dirMap = {
+    arrowup: { x: 0, y: -1 }, w: { x: 0, y: -1 },
+    arrowdown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
+    arrowleft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
+    arrowright: { x: 1, y: 0 }, d: { x: 1, y: 0 },
+  };
+  if (dirMap[key]) {
+    changeDirection(dirMap[key]);
+  }
+});
 
-.buttons {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-}
+// دکمه‌های پاپ آپ
+retryBtn.addEventListener("click", () => {
+  overlay.classList.add("hidden");
+  initGame();
+});
 
-button {
-  background: #3c78ff;
-  border: none;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: transform 0.1s ease, background 0.2s ease;
-}
+endBtn.addEventListener("click", () => {
+  overlay.classList.add("hidden");
+  statusEl.textContent = "Game ended. Refresh to play again.";
+  gameOverState = true;
+});
 
-button:hover {
-  background: #568fff;
-}
-
-button:active {
-  transform: scale(0.97);
-}
+// شروع بازی
+initGame();
