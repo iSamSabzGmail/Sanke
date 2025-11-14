@@ -1,229 +1,155 @@
-const boardSize = 20;
-const board = document.getElementById("game-board");
-const scoreEl = document.getElementById("score");
-const statusEl = document.getElementById("status");
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-const overlay = document.getElementById("overlay");
-const finalScoreEl = document.getElementById("final-score");
-const retryBtn = document.getElementById("retry-btn");
-const endBtn = document.getElementById("end-btn");
-
-let snake, direction, apple, gift, giftTimer;
-let score, speed, gameInterval, isPaused, gameOverState, applesEaten;
-
-// متغیرهای جدید برای کنترل لمسی
-let touchStartX = 0;
-let touchStartY = 0;
-
-function initGame() {
-  snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }];
-  direction = { x: 0, y: 0 };
-  apple = randomApple();
-  gift = null;
-  giftTimer = null;
-  score = 0;
-  speed = 200; // کمی سریع‌تر برای چالش بیشتر
-  applesEaten = 0;
-  isPaused = true;
-  gameOverState = false;
-  scoreEl.textContent = "Score: 0";
-  // پیام شروع برای هر دو پلتفرم
-  statusEl.textContent = "Swipe or use arrow keys to start";
-  clearInterval(gameInterval);
-  createBoard();
-  draw();
+:root {
+  --bg-color: #121212;
+  --board-bg: #1e1e1e;
+  --snake-head: #4caf50;
+  --snake-body: #388e3c;
+  --apple-color: #f44336;
+  --gift-color: #ffc107;
+  --text-color: #ffffff;
+  --cell-border: #333333;
 }
 
-function createBoard() {
-  board.innerHTML = "";
-  for (let y = 0; y < boardSize; y++) {
-    for (let x = 0; x < boardSize; x++) {
-      const cell = document.createElement("div");
-      cell.classList.add("cell");
-      board.appendChild(cell);
-    }
-  }
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-function draw() {
-  const cells = board.querySelectorAll(".cell");
-  cells.forEach(c => (c.className = "cell"));
-
-  const appleIndex = apple.y * boardSize + apple.x;
-  cells[appleIndex].classList.add("apple");
-
-  if (gift) {
-    const giftIndex = gift.y * boardSize + gift.x;
-    cells[giftIndex].classList.add("gift");
-  }
-
-  snake.forEach((part, i) => {
-    const idx = part.y * boardSize + part.x;
-    if (cells[idx]) {
-      cells[idx].classList.add("snake");
-      if (i === 0) cells[idx].classList.add("head");
-    }
-  });
+.game-container {
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
-function randomApple() {
-  let pos;
-  do {
-    pos = { x: Math.floor(Math.random() * boardSize), y: Math.floor(Math.random() * boardSize) };
-  } while (snake.some(s => s.x === pos.x && s.y === pos.y) || (gift && gift.x === pos.x && gift.y === pos.y));
-  return pos;
+h1 {
+  margin: 0.5em 0;
+  font-size: 2.5em;
 }
 
-function randomGift() {
-  let pos;
-  do {
-    pos = { x: Math.floor(Math.random() * boardSize), y: Math.floor(Math.random() * boardSize) };
-  } while (snake.some(s => s.x === pos.x && s.y === pos.y) || (apple.x === pos.x && apple.y === pos.y));
-  return pos;
+#game-board {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  width: 95vmin;
+  height: 95vmin;
+  max-width: 500px;
+  max-height: 500px;
+  background-color: var(--board-bg);
+  border: 2px solid var(--text-color);
+  border-radius: 10px;
+  margin: 0 auto;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
 }
 
-function moveSnake() {
-  const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
-  if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize || snake.some(s => s.x === head.x && s.y === head.y)) {
-    triggerGameOver();
-    return;
-  }
-
-  snake.unshift(head);
-
-  if (head.x === apple.x && head.y === apple.y) {
-    score += 5;
-    applesEaten++;
-    speed *= 0.95; // افزایش سرعت
-    apple = randomApple();
-    scoreEl.textContent = `Score: ${score}`;
-    restartLoop();
-    if (applesEaten % 3 === 0) spawnGift();
-  } else if (gift && head.x === gift.x && head.y === gift.y) {
-    score += 20;
-    gift = null;
-    clearTimeout(giftTimer);
-    scoreEl.textContent = `Score: ${score}`;
-  } else {
-    snake.pop();
-  }
-
-  draw();
+.cell {
+  border: 1px solid var(--cell-border);
+  box-sizing: border-box;
 }
 
-function spawnGift() {
-  gift = randomGift();
-  draw();
-  clearTimeout(giftTimer);
-  giftTimer = setTimeout(() => { gift = null; draw(); }, 5000);
+.snake {
+  background-color: var(--snake-body);
+  border-radius: 25%;
 }
 
-function restartLoop() {
-  clearInterval(gameInterval);
-  gameInterval = setInterval(moveSnake, speed);
+.snake.head {
+  background-color: var(--snake-head);
+  box-shadow: 0 0 8px var(--snake-head);
 }
 
-function pauseGame() {
-  if (gameOverState) return;
-  if (isPaused) {
-    isPaused = false;
-    restartLoop();
-    statusEl.textContent = "Press SPACE to pause";
-  } else {
-    isPaused = true;
-    clearInterval(gameInterval);
-    statusEl.textContent = "⏸ Paused (Press SPACE to resume)";
-  }
+.apple {
+  background-color: var(--apple-color);
+  border-radius: 50%;
+  transform: scale(0.8);
 }
 
-function triggerGameOver() {
-  clearInterval(gameInterval);
-  clearTimeout(giftTimer);
-  gameOverState = true;
-  isPaused = true;
-  statusEl.textContent = "💀 Game Over!";
-  finalScoreEl.textContent = `Your score: ${score}`;
-  overlay.classList.remove("hidden");
+.gift {
+  background-color: var(--gift-color);
+  transform: scale(0.8) rotate(45deg);
 }
 
-// تابع کمکی برای تغییر جهت جهت جلوگیری از کد تکراری
-function changeDirection(newDir) {
-  if (snake.length > 1 && newDir.x === -direction.x && newDir.y === -direction.y) return;
-  direction = newDir;
-  startGame();
+.info {
+  margin-top: 1em;
+  font-size: 1.2em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-function startGame() {
-  if (gameOverState) return;
-  if (!isPaused) return;
-  isPaused = false;
-  statusEl.textContent = "Press SPACE to pause";
-  restartLoop();
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  opacity: 1;
+  visibility: visible;
 }
 
-// --- رویدادهای کنترل لمسی (برای موبایل) ---
-function handleTouchStart(e) {
-  e.preventDefault(); // جلوگیری از اسکرول صفحه
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
+.overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
 }
 
-function handleTouchEnd(e) {
-  if (!touchStartX || !touchStartY) return;
-  e.preventDefault(); // جلوگیری از اسکرول صفحه
-
-  let touchEndX = e.changedTouches[0].clientX;
-  let touchEndY = e.changedTouches[0].clientY;
-
-  let dx = touchEndX - touchStartX;
-  let dy = touchEndY - touchStartY;
-
-  if (Math.abs(dx) > Math.abs(dy)) { // حرکت افقی
-    if (dx > 0) changeDirection({ x: 1, y: 0 }); // راست
-    else changeDirection({ x: -1, y: 0 }); // چپ
-  } else { // حرکت عمودی
-    if (dy > 0) changeDirection({ x: 0, y: 1 }); // پایین
-    else changeDirection({ x: 0, y: -1 }); // بالا
-  }
-  touchStartX = 0;
-  touchStartY = 0;
+.popup {
+  background-color: var(--board-bg);
+  padding: 2em 3em;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+  transform: scale(1);
+  transition: transform 0.3s ease;
 }
 
-// اضافه کردن رویدادهای لمسی به صفحه بازی
-board.addEventListener('touchstart', handleTouchStart, { passive: false });
-board.addEventListener('touchend', handleTouchEnd, { passive: false });
+.overlay.hidden .popup {
+  transform: scale(0.8);
+}
 
+.popup h2 {
+  margin-top: 0;
+  font-size: 2em;
+}
 
-// --- رویدادهای کنترل کیبورد (برای دسکتاپ) ---
-document.addEventListener("keydown", (e) => {
-  const key = e.key.toLowerCase();
-  if (key === " " || key === "spacebar") {
-    pauseGame();
-    return;
-  }
-  const dirMap = {
-    arrowup: { x: 0, y: -1 }, w: { x: 0, y: -1 },
-    arrowdown: { x: 0, y: 1 }, s: { x: 0, y: 1 },
-    arrowleft: { x: -1, y: 0 }, a: { x: -1, y: 0 },
-    arrowright: { x: 1, y: 0 }, d: { x: 1, y: 0 },
-  };
-  if (dirMap[key]) {
-    changeDirection(dirMap[key]);
-  }
-});
+.popup p {
+  font-size: 1.2em;
+  margin: 1em 0;
+}
 
-// دکمه‌های پاپ آپ
-retryBtn.addEventListener("click", () => {
-  overlay.classList.add("hidden");
-  initGame();
-});
+.buttons button {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1em;
+  font-weight: 700;
+  background-color: var(--snake-head);
+  color: var(--text-color);
+  border: none;
+  padding: 12px 25px;
+  margin: 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
 
-endBtn.addEventListener("click", () => {
-  overlay.classList.add("hidden");
-  statusEl.textContent = "Game ended. Refresh to play again.";
-  gameOverState = true;
-});
+.buttons button:hover {
+  background-color: var(--snake-body);
+}
 
-// شروع بازی
-initGame();
+.buttons button:active {
+  transform: scale(0.95);
+}
+>>>>>>> e3b55e5 (feat: Add mobile touch controls and professional styling)
