@@ -78,7 +78,7 @@ function randomGift() {
 
 function moveSnake() {
   const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-  if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize || snake.some(s => s.x === head.x && s.y === head.y)) {
+  if (head.x < 0 || head.x >= boardSize || head.y < 0 || head.y >= boardSize || snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
     triggerGameOver();
     return;
   }
