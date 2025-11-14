@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="game-container">
+    <h1>🐍 Snake Game</h1>
+    <div id="game-board"></div>
+    <div class="info">
+      <span id="score">Score: 0</span>
+      <span id="status">Press arrow or W/A/S/D to start</span>
+    </div>
+  </main>
+
+  <!-- Game Over Popup -->
+  <div id="overlay" class="overlay hidden">
+    <div class="popup">
+      <h2>💀 Game Over!</h2>
+      <p id="final-score">Your score: 0</p>
+      <div class="buttons">
+        <button id="retry-btn">Retry</button>
+        <button id="end-btn">End</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="code.js"></script>
+</body>
+</html>

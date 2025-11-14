@@ -1,0 +1,140 @@
+body {
+  margin: 0;
+  background: radial-gradient(circle at center, #0b1220, #04060d);
+  color: #f0f6ff;
+  font-family: system-ui, sans-serif;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game-container {
+  text-align: center;
+}
+
+h1 {
+  color: #78d6ff;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+#game-board {
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  margin: 10px auto;
+  position: relative;
+}
+
+.cell {
+  width: 100%;
+  height: 100%;
+}
+
+.snake {
+  background: linear-gradient(180deg, #00ffb3, #00b37a);
+  border-radius: 4px;
+}
+
+.head {
+  background: linear-gradient(180deg, #52ff8a, #00d67f);
+  box-shadow: 0 0 6px #00ffcc;
+}
+
+.apple {
+  background: radial-gradient(circle at 40% 40%, #ff4f4f, #b30000);
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ff4f4f;
+}
+
+/* ✨ Special Gift */
+.gift {
+  background: radial-gradient(circle at 40% 40%, #fff176, #c79a00);
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffde00;
+  animation: pulse 1s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); box-shadow: 0 0 10px #ffde00; }
+  50% { transform: scale(1.1); box-shadow: 0 0 25px #ffde00; }
+  100% { transform: scale(0.9); box-shadow: 0 0 10px #ffde00; }
+}
+
+.info {
+  display: flex;
+  justify-content: space-between;
+  width: 400px;
+  margin: 10px auto;
+  font-size: 1rem;
+}
+
+#status {
+  color: #9fb8ff;
+}
+
+/* Overlay Popup */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hidden {
+  display: none;
+}
+
+.popup {
+  background: rgba(20, 30, 45, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 30px 40px;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.popup h2 {
+  margin-bottom: 10px;
+  color: #ff7272;
+}
+
+.popup p {
+  color: #9fb8ff;
+}
+
+.buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+button {
+  background: #3c78ff;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.2s ease;
+}
+
+button:hover {
+  background: #568fff;
+}
+
+button:active {
+  transform: scale(0.97);
+}
